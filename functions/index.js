@@ -149,3 +149,52 @@ exports.moveTask = functions.https.onRequest((request, response) => {
     });
   });
 });
+
+var notify = (player, nextStatus, title) => {
+  let name = null;
+  let message = null;
+  let topic = null;
+  if (player == "wife") {
+    name = "花子";
+    topic = "husband";
+  } else {
+    name = "太郎";
+    topic = "wife";
+  }
+
+  if (nextStatus == "status_a") {
+    message = "やってに戻したよ";
+  } else if (nextStatus == "status_b") {
+    message = "やってるよ";
+  } else if (nextStatus == "status_c") {
+    message = "やったよ";
+  } else {
+    return false;
+  }
+
+  const payload = {
+    notification: {
+      title: name + "さんが更新したよ！",
+      body: name + "さんが[" + title + "]を" + message
+    },
+    topic: topic
+  };
+
+  admin.messaging().send(payload)
+  .then((response) => {
+    // Response is a message ID string.
+    console.log('Successfully sent message:', response);
+  })
+  .catch((error) => {
+    console.log('Error sending message:', error);
+  });
+};
+
+exports.notification = functions.https.onRequest((request, response) => {
+  cors(request, response, () => {
+    notify("wife", "status_b", "燃えるゴミ出し");
+    response.send("OK");
+  });
+});
+
+
