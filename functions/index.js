@@ -222,30 +222,61 @@ var dateFormat = {
   }
 };
 
+var createTask = (title, comment, limit, point) => {
+  let uuid = getUniqueStr();
+  let taskId = uuid;
+  let nowplay = "other";
+  let date = dateFormat.format(new Date(), 'yyyy/MM/dd/hh:mm');
+
+  admin.database().ref("/task/status_a/" + taskId).set({
+    title: title,
+    point: point,
+    nowplay: nowplay,
+    limit: limit,
+    date: date,
+    comment: comment
+  })
+  .catch(error => {
+    console.log('Error set message:', error);
+  });
+};
+
 exports.createOnceTask = functions.https.onRequest((request, response) => {
   cors(request, response, () => {
-    console.log(request);
-    let uuid = getUniqueStr();
-    let taskId = uuid;
-    let nowplay = "other";
     let title = request.body.title;
     let comment = request.body.comment;
     let limit = request.body.limit;
     let point = request.body.point;
-    let date = dateFormat.format(new Date(), 'yyyy/MM/dd/hh:mm');
-      admin.database().ref("/task/status_a/" + taskId).set({
-        title: title,
-        point: point,
-        nowplay: nowplay,
-        limit: limit,
-        date: date,
-        comment: comment
-      })
-      .catch(error => {
-        response.status(404).send({ message: 'Not Found2' })
-      });
-
+    createTask(title, comment, limit, point);
     response.send("OK");
   });
 });
 
+exports.refreshTask = functions.https.onRequest((request, response) => {
+  cors(request, response, () => {
+
+    admin.database().ref("/mastertask/").once('value')
+    .then(result => {
+      result.forEach(task => {
+        let title = task.val().title;
+        let comment = task.val().comment;
+        let limit = task.val().limit;
+        let point = task.val().point;
+        let date_yyyy = dateFormat.format(new Date(), 'yyyy');
+        let date_mm = dateFormat.format(new Date(), 'MM');
+        let date_dd = dateFormat.format(new Date(), 'dd');
+
+        let rep1 = limit.replace('yyyy', date_yyyy);
+        let rep2 = rep1.replace('mm', date_mm);
+        let rep3 = rep2.replace('dd', date_dd);
+
+        createTask(title, comment, rep3, point);
+      });
+    })
+    .catch(error => {
+      response.status(404).send({ message: 'Not Found' })
+    });
+
+    response.send("OK");
+  });
+});
