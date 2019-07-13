@@ -13,10 +13,12 @@ const cors = require('cors')({origin: true});
 
 exports.putMasterTask= functions.https.onRequest((request, response) => {
   cors(request, response, () => {
+    console.log(request);
     if (request.method !== 'PUT') {
       response.status(405).send('Method Not Allowed');
       return;
     }
+    console.log(request);
     let taskId = request.body.taskId;
     let title  = request.body.title;
     let cycle = request.body.cycle;
@@ -113,13 +115,13 @@ exports.moveTask = functions.https.onRequest((request, response) => {
     let taskId = request.body.taskId;
     let preStatus  = request.body.preStatus;
     let nextStatus = request.body.nextStatus;
+    let nowplay = request.body.nowplay;
     console.log('move request ', taskId, preStatus, nextStatus);
 
     admin.database().ref("/task/" + preStatus + "/" + taskId).once('value')
     .then(result => {
       let title = result.val().title;
       let point = result.val().point;
-      let nowplay = result.val().nowplay;
       let limit = result.val().limit;
       let date = result.val().date;
       let comment = result.val().comment;
@@ -134,7 +136,7 @@ exports.moveTask = functions.https.onRequest((request, response) => {
         comment: comment
       })
       .catch(error => {
-        response.status(404).send({ message: 'Not Found3' })
+        response.status(404).send({ message: 'Not Found2' })
       });
 
       admin.database().ref("/task/" + preStatus + "/" + taskId).set(null)
