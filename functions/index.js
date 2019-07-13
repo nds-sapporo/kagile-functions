@@ -96,6 +96,13 @@ exports.calcSummary = functions.https.onRequest((request, response) => {
         .catch(error => {
           response.status(404).send({ message: 'Not Found3' })
         });
+
+        admin.database().ref("/task/status_d").set(null)
+        .catch(error => {
+          response.status(404).send({ message: 'Not Found3' })
+        });
+
+        refreshTask();
         response.send("OK");
       })
       .catch(error => {
@@ -246,15 +253,13 @@ exports.createOnceTask = functions.https.onRequest((request, response) => {
     let title = request.body.title;
     let comment = request.body.comment;
     let limit = request.body.limit;
-    let point = request.body.point;
+    let point = request.body.point - 0;
     createTask(title, comment, limit, point);
     response.send("OK");
   });
 });
 
-exports.refreshTask = functions.https.onRequest((request, response) => {
-  cors(request, response, () => {
-
+var refreshTask = () => {
     admin.database().ref("/mastertask/").once('value')
     .then(result => {
       result.forEach(task => {
@@ -274,9 +279,8 @@ exports.refreshTask = functions.https.onRequest((request, response) => {
       });
     })
     .catch(error => {
-      response.status(404).send({ message: 'Not Found' })
+      console.log('Error set message:', error);
     });
 
-    response.send("OK");
-  });
-});
+    console.log("OK");
+};
