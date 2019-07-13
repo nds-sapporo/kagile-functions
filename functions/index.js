@@ -139,6 +139,8 @@ exports.moveTask = functions.https.onRequest((request, response) => {
         response.status(404).send({ message: 'Not Found2' })
       });
 
+      notify(nowplay, nextStatus, title);
+
       admin.database().ref("/task/" + preStatus + "/" + taskId).set(null)
       .catch(error => {
         response.status(404).send({ message: 'Not Found3' })
@@ -199,4 +201,51 @@ exports.notification = functions.https.onRequest((request, response) => {
   });
 });
 
+function getUniqueStr(myStrong){
+ var strong = 1000;
+ if (myStrong) strong = myStrong;
+ return new Date().getTime().toString(16)  + Math.floor(strong*Math.random()).toString(16)
+}
+
+var dateFormat = {
+  _fmt : {
+    "yyyy": function(date) { return date.getFullYear() + ''; },
+    "MM": function(date) { return ('0' + (date.getMonth() + 1)).slice(-2); },
+    "dd": function(date) { return ('0' + date.getDate()).slice(-2); },
+    "hh": function(date) { return ('0' + date.getHours()).slice(-2); },
+    "mm": function(date) { return ('0' + date.getMinutes()).slice(-2); },
+    "ss": function(date) { return ('0' + date.getSeconds()).slice(-2); }
+  },
+  _priority : ["yyyy", "MM", "dd", "hh", "mm", "ss"],
+  format: function(date, format){
+    return this._priority.reduce((res, fmt) => res.replace(fmt, this._fmt[fmt](date)), format)
+  }
+};
+
+exports.createOnceTask = functions.https.onRequest((request, response) => {
+  cors(request, response, () => {
+    console.log(request);
+    let uuid = getUniqueStr();
+    let taskId = uuid;
+    let nowplay = "other";
+    let title = request.body.title;
+    let comment = request.body.comment;
+    let limit = request.body.limit;
+    let point = request.body.point;
+    let date = dateFormat.format(new Date(), 'yyyy/MM/dd/hh:mm');
+      admin.database().ref("/task/status_a/" + taskId).set({
+        title: title,
+        point: point,
+        nowplay: nowplay,
+        limit: limit,
+        date: date,
+        comment: comment
+      })
+      .catch(error => {
+        response.status(404).send({ message: 'Not Found2' })
+      });
+
+    response.send("OK");
+  });
+});
 
