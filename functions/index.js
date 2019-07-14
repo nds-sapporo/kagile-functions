@@ -58,6 +58,10 @@ exports.calcSummary = functions.https.onRequest((request, response) => {
     let weight_w = 0;
     let summaryDate = 0;
 
+    moveTasks('status_a');
+    moveTasks('status_b');
+    moveTasks('status_c');
+
     admin.database().ref("/master/").once('value')
     .then(result => {
       console.log('result val',result.val().okozukai, result.val().weight.husband, result.val().weight.wife, result.val().date);
@@ -116,6 +120,31 @@ exports.calcSummary = functions.https.onRequest((request, response) => {
   });
 });
 
+var moveTasks = (status) => {
+  admin.database().ref("/task/" + status ).once('value')
+  .then(result2 => {
+    result2.forEach(task => {
+      let title = task.val().title;
+      let point = task.val().point;
+      let limit = task.val().limit;
+      let date = task.val().date;
+      let comment = task.val().comment;
+      admin.database().ref("/task/status_d/"+ result2.key).set({
+        title: title,
+        point: point,
+        nowplay: "other",
+        limit: limit,
+        date: date,
+        comment: comment
+      })
+      .catch(error => {
+        console.log('Error sending message:', error);
+      });
+      admin.database().ref("/task/"+ status ).set(null);
+   });
+ });
+};
+
 exports.moveTask = functions.https.onRequest((request, response) => {
   cors(request, response, () => {
     console.log(request);
@@ -123,6 +152,7 @@ exports.moveTask = functions.https.onRequest((request, response) => {
     let preStatus  = request.body.preStatus;
     let nextStatus = request.body.nextStatus;
     let nowplay = request.body.nowplay;
+    let notifyplayer = request.body.nowplay;
     console.log('move request ', taskId, preStatus, nextStatus);
 
     admin.database().ref("/task/" + preStatus + "/" + taskId).once('value')
@@ -132,6 +162,10 @@ exports.moveTask = functions.https.onRequest((request, response) => {
       let limit = result.val().limit;
       let date = result.val().date;
       let comment = result.val().comment;
+      if (preStatus == "status_b")
+      {
+        notifyplayer = result.val().nowplay;
+      }
       console.log('move request preStatus', taskId, title, point, nowplay, limit, date, comment);
 
       admin.database().ref("/task/" + nextStatus + "/" + taskId).set({
@@ -146,7 +180,7 @@ exports.moveTask = functions.https.onRequest((request, response) => {
         response.status(404).send({ message: 'Not Found2' })
       });
 
-      notify(nowplay, nextStatus, title);
+      notify(notifyplayer, nextStatus, title);
 
       admin.database().ref("/task/" + preStatus + "/" + taskId).set(null)
       .catch(error => {
